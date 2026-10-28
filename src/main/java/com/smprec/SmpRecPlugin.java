@@ -27,6 +27,7 @@ public class SmpRecPlugin extends JavaPlugin implements Listener, TabExecutor {
     private final Map<String, String> bans = new HashMap<>();
     private final Set<String> muted = new HashSet<>();
     private final Set<UUID> immortal = new HashSet<>();
+    private final Set<UUID> vanished = new HashSet<>();
     private boolean chatEnabled = true;
     private boolean joinLeaveEnabled = true;
     private File dataFile;
@@ -35,7 +36,7 @@ public class SmpRecPlugin extends JavaPlugin implements Listener, TabExecutor {
     public void onEnable() {
         dataFile = new File(getDataFolder(), "data.yml");
         load();
-        for (String c : List.of("ban", "unban", "mute", "unmute", "chat", "immortal", "joinleave")) {
+        for (String c : List.of("ban", "unban", "mute", "unmute", "chat", "immortal", "joinleave", "vanish")) {
             var cmd = getCommand(c);
             if (cmd != null) {
                 cmd.setExecutor(this);
@@ -134,6 +135,24 @@ public class SmpRecPlugin extends JavaPlugin implements Listener, TabExecutor {
                     msg(p, "Immortal mode ON - you cannot die (minimum half heart).", NamedTextColor.GOLD);
                 }
             }
+            case "vanish" -> {
+                Player p;
+                if (a.length >= 1) {
+                    p = Bukkit.getPlayerExact(a[0]);
+                    if (p == null) { msg(s, "Player not online.", NamedTextColor.RED); return true; }
+                } else if (s instanceof Player self) {
+                    p = self;
+                } else { msg(s, "Usage: /vanish <player>", NamedTextColor.RED); return true; }
+                if (vanished.contains(p.getUniqueId())) {
+                    setVanish(p, false);
+                    msg(p, "Vanish OFF - everyone can see you.", NamedTextColor.YELLOW);
+                    if (!s.equals(p)) msg(s, p.getName() + " is no longer vanished.", NamedTextColor.YELLOW);
+                } else {
+                    setVanish(p, true);
+                    msg(p, "Vanish ON - nobody can see you.", NamedTextColor.GREEN);
+                    if (!s.equals(p)) msg(s, p.getName() + " is now vanished.", NamedTextColor.GREEN);
+                }
+            }
             case "joinleave" -> {
                 if (a.length < 1 || !(a[0].equalsIgnoreCase("on") || a[0].equalsIgnoreCase("off"))) {
                     msg(s, "Usage: /joinleave <on|off>", NamedTextColor.RED); return true;
@@ -144,6 +163,16 @@ public class SmpRecPlugin extends JavaPlugin implements Listener, TabExecutor {
             }
         }
         return true;
+    }
+
+    private void setVanish(Player p, boolean on) {
+        if (on) vanished.add(p.getUniqueId());
+        else vanished.remove(p.getUniqueId());
+        for (Player o : Bukkit.getOnlinePlayers()) {
+            if (o.equals(p)) continue;
+            if (on) o.hidePlayer(this, p);
+            else o.showPlayer(this, p);
+        }
     }
 
     @Override
@@ -190,21 +219,28 @@ public class SmpRecPlugin extends JavaPlugin implements Listener, TabExecutor {
     public void onDamage(EntityDamageEvent e) {
         if (!(e.getEntity() instanceof Player p)) return;
         if (!immortal.contains(p.getUniqueId())) return;
-        // Half heart = 1.0 HP. Damage allowed until 1 HP, never below.
-        if (p.getHealth() - e.getFinalDamage() < 1.0) {
-            e.setCancelled(true);
-            if (p.getHealth() > 1.0) p.setHealth(1.0);
+        double health = p.getHealth();
+        // Lethal hit: let the hit land (knockback + hurt effect) but with 0 damage,
+        // and keep the player at half a heart (1.0 HP).
+        if (health - e.getFinalDamage() < 1.0) {
+            e.setDamage(0);
+            if (health > 1.0) p.setHealth(1.0);
         }
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         if (!joinLeaveEnabled) e.joinMessage(null);
+        for (UUID id : vanished) {
+            Player v = Bukkit.getPlayer(id);
+            if (v != null) e.getPlayer().hidePlayer(this, v);
+        }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         if (!joinLeaveEnabled) e.quitMessage(null);
+        if (vanished.remove(e.getPlayer().getUniqueId())) e.quitMessage(null);
         immortal.remove(e.getPlayer().getUniqueId());
     }
-                  }
+            }

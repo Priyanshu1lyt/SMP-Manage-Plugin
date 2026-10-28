@@ -1,5 +1,6 @@
 name: SmpRecording
 version: 1.0.0
+authors: [NotHeartYT]
 main: com.smprec.SmpRecPlugin
 api-version: '1.21'
 description: SMP recording tools - ban, mute, chat control, immortal, join/leave toggle

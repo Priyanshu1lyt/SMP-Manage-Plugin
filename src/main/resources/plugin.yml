@@ -37,3 +37,7 @@ permissions:
   smprec.admin:
     description: Use all SmpRecording commands
     default: op
+vanish:
+    description: Toggle vanish (invisible to all players)
+    usage: /vanish [player]
+    permission: smprec.admin

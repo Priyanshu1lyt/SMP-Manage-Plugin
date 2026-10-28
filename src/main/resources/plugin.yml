@@ -1,0 +1,39 @@
+name: SmpRecording
+version: 1.0.0
+main: com.smprec.SmpRecPlugin
+api-version: '1.21'
+description: SMP recording tools - ban, mute, chat control, immortal, join/leave toggle
+commands:
+  ban:
+    description: Ban a player
+    usage: /ban <player> [reason]
+    permission: smprec.admin
+  unban:
+    description: Unban a player
+    usage: /unban <player>
+    permission: smprec.admin
+  mute:
+    description: Mute a player
+    usage: /mute <player>
+    permission: smprec.admin
+  unmute:
+    description: Unmute a player
+    usage: /unmute <player>
+    permission: smprec.admin
+  chat:
+    description: Turn global chat on/off
+    usage: /chat <on|off>
+    permission: smprec.admin
+  immortal:
+    description: Toggle immortal (stays at half heart, never dies)
+    usage: /immortal <player>
+    permission: smprec.admin
+  joinleave:
+    description: Turn join/leave messages on/off
+    usage: /joinleave <on|off>
+    aliases: [join-and-leave, jl]
+    permission: smprec.admin
+permissions:
+  smprec.admin:
+    description: Use all SmpRecording commands
+    default: op
